@@ -1,77 +1,69 @@
 #include "ft_ping.h"
 #include <sys/time.h>
-#include <stdio.h>
 
-struct s_ping 	g_ping;
 
 int		init_socket(int *opt)
 {
-	g_ping.socket_fd = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
+	g_ping.socket_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 	if (g_ping.socket_fd < 0)
 	{
 		perror("socket");
 		return (1);
 	}
-	if (setsockopt(g_ping.socket_fd, SOL_SOCKET, IP_HDRINCL, opt, sizeof(*opt)))
-	{
-		perror("setsockopt");
-		return (1);	
-	}
+	// if (setsockopt(g_ping.socket_fd, SOL_SOCKET, 0, opt, sizeof(*opt)))
+	// {
+	// 	perror("setsockopt");
+	// 	return (1);	
+	// }
 	return (0);
 }
 
-// int 	send_ping()
-// {
-// 	void			*pkt;
-// 	struct icmp 	*icmp;
-
-// 	pkt = malloc(g_ping.datalen + ICMP_HDR_SIZE);
-// 	icmp = pkt;
-// 	icmp->type = ICMP_ECHO;
-// 	icmp->code = 0;
-// 	icmp->ident = g_ping.ident;
-// 	icmp->
-// 	if (pkt == NULL)
-// 		return (1);
-// 	return (0);
-// }
-
-void 	handle_alarm()
+void	init_ping(void)
 {
-	printf("ALARM\n");
+	g_ping.id = getpid();
+	g_ping.dest_name = NULL;
+	g_ping.datalen = DEFAULT_DATALEN;
+	g_ping.ipstr = (char*)malloc(64);
+	if (g_ping.ipstr == NULL)
+		exit(1);
+	memset(&g_ping.opts, 0x0, sizeof(struct s_opts));
+	g_ping.timing = 0;
+	g_ping.transmitted = 0;
+	g_ping.rtt_sum = 0;
+	g_ping.rtt_max = 0;
+	g_ping.rtt_min = INT_MAX;
 }
 
 int main(int argc, char **argv)
 {
-	struct hostent		*host;
 	struct addrinfo 	hints;
-	struct addrinfo 	*res = NULL, *rp = NULL;
-	int 				opt;
+	struct addrinfo 	*res = NULL;
+	int 				opt, ret;
+	struct msghdr 		msg;
+	unsigned char		buf[1024];
+	struct sockaddr_in 	from;
+	int 				fromlen;
 
 	if (argc == 1)
 	{
 		dprintf(2, "Usage\n");
 		return (1);
 	}
-	// NEED PARSING OPTIONS
-
+	init_ping();
+	parse_options(argc, argv);
 	memset(&hints, 0x0, sizeof(struct addrinfo));
+	memset(buf, 0x0, 1024);
 	hints.ai_family = AF_INET;
-	if (getaddrinfo(argv[1], NULL, &hints, &res))
+	if (getaddrinfo(g_ping.dest_name, NULL, &hints, &res))
 		return (1);
+	g_ping.dest.sin_family = AF_INET;
 	g_ping.dest.sin_addr.s_addr = ((struct sockaddr_in*)res->ai_addr)->sin_addr.s_addr;
+	inet_ntop(g_ping.dest.sin_family, &g_ping.dest.sin_addr, g_ping.ipstr, 64);
 	freeaddrinfo(res);
-	g_ping.ident = getpid();
-	printf("%u\n", g_ping.dest.sin_addr.s_addr);
 	init_socket(&opt);
-	signal(SIGALRM, handle_alarm);
-	while (1)
-	{
-		alarm(1);
-	}
-	// for (rp = res; rp != NULL; rp = rp->ai_next)
-	// {
-	// 	printf("toto\n");
-	// }
-	return (0);
+	signal(SIGALRM, sig_alarm);
+	printf("PING %s (%s) %d(%ld) bytes of data.\n", g_ping.dest_name, g_ping.ipstr, g_ping.datalen, g_ping.datalen + IP_HDR_SIZE + ICMP_HDR_SIZE);
+	sig_alarm(0);
+	recv_pong();
+	return (ret);
 }
