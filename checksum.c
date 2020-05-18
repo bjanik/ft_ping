@@ -4,6 +4,8 @@ unsigned short in_cksum(void *ptr, int len)
 {
 	unsigned short	*p;
 	unsigned int 	checksum;
+	unsigned short 	oddbyte;
+	unsigned short 	res;
 
 	checksum = 0;
 	p = ptr;
@@ -13,7 +15,12 @@ unsigned short in_cksum(void *ptr, int len)
 		len -= sizeof(unsigned short);
 	}
 	if (len == 1)
-		checksum += *(unsigned char*)ptr;
+	{
+		oddbyte = 0;
+		*((unsigned short *)&oddbyte) = *(unsigned char *)ptr;
+	}
 	checksum = (checksum >> 16) + (checksum & 0xFFFF);
-	return ((unsigned short)~checksum);
+	checksum += (checksum >> 16);
+	res = ~checksum;
+	return (res);
 }

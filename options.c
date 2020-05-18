@@ -11,8 +11,7 @@ int 	set_ipv6(char **argv, int *index)
 {
 	(void)argv;
 	(void)index;
-	g_ping.opts.opt |= PING_IPV6;
-	(*index)++;
+	g_ping.ipv = IPV6;
 	return (0);
 }
 
@@ -21,7 +20,6 @@ int 	set_quiet(char **argv, int *index)
 	(void)argv;
 	(void)index;
 	g_ping.opts.opt |= PING_QUIET;
-	(*index)++;
 	return (0);
 }
 
@@ -30,7 +28,6 @@ int 	set_socket_debug(char **argv, int *index)
 	(void)argv;
 	(void)index;
 	g_ping.opts.opt |= PING_SOCKET_DEBUG;
-	(*index)++;
 	return (0);	
 }
 
@@ -41,7 +38,13 @@ int 	set_count(char **argv, int *index)
 		dprintf(STDERR_FILENO, "ping: option requires an argument -- 'c'\n");
 		return (1);
 	}
-	g_ping.opts.count = atoi(argv[++(*index)]);
+	g_ping.opts.count = atol(argv[++(*index)]);
+	if (g_ping.opts.count < 1 || g_ping.opts.count > LONG_MAX)
+	{
+		dprintf(STDERR_FILENO, "ping: invalid argument: '%s': ", argv[*index]);
+		dprintf(STDERR_FILENO, "out of range: 0 <= value <= %ld\n", LONG_MAX);
+		return (1);
+	}
 	return (0);
 }
 
@@ -60,7 +63,13 @@ int 	set_data_size(char **argv, int *index)
 		dprintf(STDERR_FILENO, "ping: option requires an argument -- 's'\n");
 		return (1);
 	}
-	g_ping.opts.packet_size = atoi(argv[++(*index)]);
+	g_ping.datalen = atoi(argv[++(*index)]);
+	if (g_ping.datalen < 0 || g_ping.datalen > 127992)
+	{
+		dprintf(STDERR_FILENO, "ping: invalid argument: '%s': ", argv[*index]);
+		dprintf(STDERR_FILENO, "out of range: 0 <= value <= 127992\n");
+		return (1);
+	}
 	return (0);	
 }
 
