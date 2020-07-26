@@ -7,14 +7,6 @@ struct s_ping_options
 	int 	(*opt_f)(char **argv, int *index);
 };
 
-int 	set_ipv6(char **argv, int *index)
-{
-	(void)argv;
-	(void)index;
-	g_ping.ipv = IPV6;
-	return (0);
-}
-
 int 	set_quiet(char **argv, int *index)
 {
 	(void)argv;
@@ -87,7 +79,6 @@ int 	parse_options(int argc, char **argv)
 
 	(void)argc;
 	struct s_ping_options 	ping_options[] = {
-		{"-6", set_ipv6},
 		{"-c", set_count},
 		{"-D", set_cap_d},
 		{"-q", set_quiet},

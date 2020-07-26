@@ -3,10 +3,7 @@
 #include <arpa/inet.h>
 #include <linux/sockios.h>
 #include <linux/icmp.h>
-#include <linux/icmpv6.h>
-#include <linux/in6.h>
 #include <linux/ip.h>
-#include <linux/ipv6.h>
 #include <limits.h>
 #include <netdb.h>
 #include <signal.h>
@@ -18,17 +15,15 @@
 #include <unistd.h>
 
 #define ICMP_HDR_SIZE sizeof(struct icmphdr)
-#define ICMP6_HDR_SIZE sizeof(struct icmp6hdr)
 #define IP_HDR_SIZE sizeof(struct iphdr)
 #define TIMEVAL_SIZE 16
 #define DEFAULT_DATALEN 56
 
 #define IPV4 0
-#define IPV6 1
-#define PING_QUIET 2
-#define PING_SOCKET_DEBUG 4
-#define PING_VERBOSE 8
-#define PING_CAP_D 16
+#define PING_QUIET 1
+#define PING_SOCKET_DEBUG 2
+#define PING_VERBOSE 4
+#define PING_CAP_D 8
 
 struct s_opts
 {
@@ -39,8 +34,8 @@ struct s_opts
 struct s_ping
 {
 	struct sockaddr_in	dest;
-	struct sockaddr_in6	dest6;
 	char				*dest_name;
+	char				*canonname;
 	char				*ipstr;
 	int 				ipv;
 	int 				socket_fd;
@@ -57,7 +52,6 @@ struct s_ping
 };
 
 int 					send_ipv4(void);
-int 					send_ipv6(void);
 int						recv_pong(void);
 
 unsigned short 			in_cksum(void *ptr, int len);
