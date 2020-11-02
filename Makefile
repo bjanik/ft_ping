@@ -14,7 +14,7 @@ NAME = ft_ping
 
 CC = gcc
 
-FLAGS = -Wall -Wextra -Werror
+FLAGS = -Wall -Wextra -Werror -MMD
 
 LIBFT_DIR  = libft/
 
@@ -42,8 +42,8 @@ OBJ = $(addprefix $(OBJ_PATH),$(OBJ_NAME))
 all : $(NAME)
 
 $(NAME) : $(OBJ)
-	@make -C $(LIBFT_DIR)
-	@$(CC) $(FLAGS) $(OBJ) $(LIBFT_LIB) -I $(INC_PATH) -I $(LIBFT_INC) -o $(NAME)
+	make -C $(LIBFT_DIR)
+	$(CC) $(FLAGS) $(OBJ) $(LIBFT_LIB) -I $(INC_PATH) -I $(LIBFT_INC) -o $(NAME)
 
 $(OBJ) : $(OBJ_PATH)
 
@@ -52,7 +52,7 @@ $(OBJ_PATH) :
 	@mkdir -p $(dir $(OBJ))
 
 $(OBJ_PATH)%.o: $(SRC_PATH)%.c
-	$(CC) $(FLAGS) -c $< -o $@ -I$(INC_PATH) -I$(LIBFT_INC)
+	$(CC) $(FLAGS) -c $< -o $@ -I$(INC_PATH) -I$(LIBFT_INC) -l$(LIBFT_LIB)
 
 clean :
 	/bin/rm -rf $(OBJ_PATH)
@@ -63,5 +63,7 @@ fclean : clean
 	/bin/rm -f $(NAME)
 
 re : fclean all
+
+-include $(OBJ:.o=.d)
 
 .PHONY: all, clean, fclean, re

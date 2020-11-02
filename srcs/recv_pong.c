@@ -42,8 +42,10 @@ static const char	*g_icmp_responses[] = {
 static void			display_reply_update_timing(struct icmphdr *icmp,
 												struct timeval tv,
 												struct timeval *time,
-												float rtt)
+												struct iphdr *ip)
 {
+	float rtt = 0;
+
 	printf("%lu bytes from %s", g_ping.datalen + sizeof(struct icmphdr),
 			g_ping.dest_name);
 	if (ft_strcmp(g_ping.ipstr, g_ping.dest_name))
@@ -63,13 +65,12 @@ static void			display_reply_update_timing(struct icmphdr *icmp,
 	printf("\n");
 }
 
-static int			read_pong_ipv4(void *buf, int len)
+static int			read_pong_ipv4(void *buf)
 {
 	struct icmphdr		*icmp;
 	struct iphdr		*ip;
 	struct timeval		tv;
-	struct timeval		*time;
-	float				rtt;
+	struct timeval		*time = NULL;
 
 	g_ping.timing ? gettimeofday(&tv, NULL) : 0;
 	ip = (struct iphdr*)buf;
@@ -79,32 +80,37 @@ static int			read_pong_ipv4(void *buf, int len)
 	{
 		if (icmp->type == ICMP_ECHO)
 			return (0);
-		dprintf(STDERR_FILENO, "%s\n", icmp_responses[icmp->type]);
+		dprintf(STDERR_FILENO, "%s\n", g_icmp_responses[icmp->type]);
 		return (1);
 	}
 	if (icmp->un.echo.id != g_ping.id)
 		return (1);
-	display_reply_update_timing(tv, time, rtt);
+	display_reply_update_timing(icmp, tv, time, ip);
 	g_ping.received++;
+	return (0);
+}
+
+static int recv_pkt(void *pkt, int pkt_size)
+{
+	socklen_t			fromlen;
+	struct sockaddr_in	from;
+	int				len;
+
+	len = recvfrom(g_ping.socket_fd,
+					pkt,
+					pkt_size,
+					0,
+					(struct sockaddr *)&from, &fromlen);
+	if (len > 0)
+		read_pong_ipv4(pkt);
 	return (0);
 }
 
 int					recv_pong(void)
 {
-	int					fromlen;
-	int					len;
-	unsigned char		buf[1024];
-	struct sockaddr_in	from;
+	unsigned char		buf[2048];
 
 	while (42)
-	{
-		fromlen = sizeof(struct sockaddr_in);
-		len = recvfrom(g_ping.socket_fd,
-						(void*)buf,
-						g_ping.datalen + 100,
-						0,
-						(struct sockaddr *)&from, &fromlen);
-		read_pong_ipv4(buf, len);
-	}
+		recv_pkt((void*)buf, g_ping.datalen + ICMP_HDR_SIZE);
 	return (0);
 }

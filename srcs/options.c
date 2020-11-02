@@ -79,40 +79,61 @@ int		set_verbose(char **argv, int *index)
 	return (0);
 }
 
-static void set_options(struct s_ping_options options[])
+int 	set_ttl(char **argv, int *index)
 {
-	options[0] = {"-s", set_data_size};
-	options[1] = {"-q", set_quiet};
-	options[2] = {"-d", set_socket_debug};
-	options[3] = {"-D", set_cap_d};
-	options[4] = {"-c", set_count};
-	options[5] = {"-v", set_verbose};
-	options[6] = {NULL, NULL};
+	if (argv[*index + 1] == NULL)
+	{
+		dprintf(STDERR_FILENO, "ping: option requires an argument -- 's'\n");
+		return (1);
+	}
+	g_ping.ttl = ft_atoi(argv[++(*index)]);
+	if (g_ping.ttl < 0 || g_ping.datalen > 255)
+	{
+		dprintf(STDERR_FILENO, "ping: invalid argument: '%s': ", argv[*index]);
+		dprintf(STDERR_FILENO, "out of range: 0 <= value <= 127992\n");
+		return (1);
+	}
+	return (0);
 }
 
 int		parse_options(int argc, char **argv)
 {
-	int	i;
-	int	j;
-	struct s_ping_options options[OPTIONS_LEN];
-
+	int	i, j;
+	struct s_ping_options options[] = {
+		{"-c", set_count},
+		{"-D", set_cap_d},
+		{"-d", set_socket_debug},
+		{"-q", set_quiet},
+		{"-s", set_data_size},
+		{"-t", set_ttl},
+		{"-v", set_verbose},
+		{NULL, NULL}
+	};
 
 	(void)argc;
 	i = 1;
-	set_options(options);
 	while (argv[i])
 	{
 		j = 0;
 		if (argv[i][0] != '-')
-			g_ping.dest_name = argv[i];
-		while (g_ping.ping_options[j].opt)
 		{
-			if (ft_strcmp(g_ping.ping_options[j].opt, argv[i]) == 0)
+			g_ping.dest_name = argv[i];
+			return (0);
+		}
+		while (options[j].opt != NULL)
+		{
+			if (ft_strcmp(options[j].opt, argv[i]) == 0)
 			{
-				if (g_ping.ping_options[j].opt_f(argv, &i))
+				if (options[j].opt_f(argv, &i))
 					return (1);
+				break;
 			}
 			j++;
+		}
+		if (options[j].opt == NULL)
+		{
+			dprintf(STDERR_FILENO, "ft_ping: invalid option -- '%c'\n", argv[i][1]);
+			return (ft_ping_usage());
 		}
 		i++;
 	}

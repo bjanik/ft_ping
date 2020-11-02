@@ -17,7 +17,8 @@ void	sig_final(int x)
 	float			packet_loss;
 	struct timeval	end;
 
-	packet_loss = (g_ping.transmitted - g_ping.received) / g_ping.transmitted;
+	(void)x;
+	packet_loss = (g_ping.transmitted - g_ping.received) / (float)g_ping.transmitted;
 	gettimeofday(&end, NULL);
 	ft_tv_sub(&end, &g_ping.start);
 	printf("\n--- %s ping statistics ---\n", g_ping.dest_name);

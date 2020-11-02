@@ -13,6 +13,7 @@
 #ifndef FT_PING_H
 # define FT_PING_H
 # include <arpa/inet.h>
+# include <errno.h>
 # include <linux/sockios.h>
 # include <linux/icmp.h>
 # include <linux/ip.h>
@@ -26,8 +27,13 @@
 # include <sys/time.h>
 # include <unistd.h>
 
+#include "libft.h"
+
 # define TIMEVAL_SIZE 16
 # define DEFAULT_DATALEN 56
+# define ICMP_HDR_SIZE sizeof(struct icmphdr)
+# define IP_HDR_SIZE sizeof(struct iphdr)
+# define DEFAULT_TTL 64
 
 # define IPV4 0
 # define PING_QUIET 1
@@ -44,7 +50,7 @@ struct						s_ping_options
 
 struct						s_opts
 {
-	int						count;
+	long					count;
 	int						opt;
 };
 
@@ -61,6 +67,7 @@ struct						s_ping
 	pid_t					id;
 	int						timing;
 	int						datalen;
+	int 					ttl;
 	float					rtt_sum;
 	float					rtt_max;
 	float					rtt_min;
@@ -77,13 +84,9 @@ void						ft_tv_sub(struct timeval *tv, struct timeval *time);
 void						sig_alarm(int x);
 void						sig_final(int x);
 
-int							set_quiet(char **argv, int *index);
-int							set_socket_debug(char **argv, int *index);
-int							set_count(char **argv, int *index);
-int							set_cap_d(char **argv, int *index);
-int							set_data_size(char **argv, int *index);
-int							set_verbose(char **argv, int *index);
 int							parse_options(int argc, char **argv);
+
+int 						ft_ping_usage(void);
 
 struct s_ping				g_ping;
 

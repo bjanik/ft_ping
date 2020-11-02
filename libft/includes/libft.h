@@ -17,6 +17,7 @@
 # include <fcntl.h>
 # include <string.h>
 # include <stdarg.h>
+# include <stdint.h>	
 # include <sys/stat.h>
 # include <sys/ioctl.h>
 # include <sys/wait.h>

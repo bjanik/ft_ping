@@ -18,7 +18,6 @@ static void	fill_pkt(struct icmphdr *icmp)
 	struct timeval	*tv;
 	int				i;
 
-	icmp = (struct icmphdr*)pkt;
 	icmp->type = ICMP_ECHO;
 	icmp->code = 0;
 	icmp->un.echo.id = g_ping.id;
@@ -41,16 +40,14 @@ static void	fill_pkt(struct icmphdr *icmp)
 int			send_ipv4(void)
 {
 	void			*pkt;
-	unsigned char	*p;
-	int				pkt_size;
+	int				pkt_size = g_ping.datalen + ICMP_HDR_SIZE;
 	int				ret;
-
-	pkt_size = g_ping.datalen + sizeof(struct icmphdr);
-	if ((pkt = malloc(g_ping.datalen + sizeof(struct icmphdr))) == NULL)
+	
+	if ((pkt = malloc(pkt_size)) == NULL)
 		return (1);
-	fill_pkt((struct icmp*)pkt);
+	fill_pkt(pkt);
 	ret = sendto(g_ping.socket_fd, pkt,
-				g_ping.datalen + sizeof(struct icmphdr), 0,
+				pkt_size, 0,
 				(struct sockaddr*)&g_ping.dest, sizeof(g_ping.dest));
 	if (ret < 0)
 		perror("sendto");
