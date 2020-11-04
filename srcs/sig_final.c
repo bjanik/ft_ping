@@ -24,11 +24,16 @@ void	sig_final(int x)
 	printf("\n--- %s ping statistics ---\n", g_ping.dest_name);
 	printf("%d packets transmitted, ", g_ping.transmitted);
 	printf("%d packets received, ", g_ping.received);
+	if (g_ping.errors)
+		printf("+%d errors, ", g_ping.errors);
 	printf("%d%% packet loss, ", (int)(packet_loss * 100));
 	printf("time %ldms\n", end.tv_sec * 1000 + end.tv_usec / 1000);
-	if (g_ping.timing)
+	if (g_ping.received == 0)
+		g_ping.rtt_min = 0;
+	if (g_ping.timing && g_ping.transmitted != g_ping.errors)
 		printf("rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n",
 				g_ping.rtt_min,
 				g_ping.rtt_sum / g_ping.transmitted, g_ping.rtt_max, 0.0);
+
 	exit(0);
 }

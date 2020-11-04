@@ -16,8 +16,9 @@
 # include <errno.h>
 # include <linux/sockios.h>
 # include <linux/icmp.h>
-# include <linux/ip.h>
+// # include <linux/ip.h>
 # include <limits.h>
+# include <netinet/ip.h>
 # include <netdb.h>
 # include <signal.h>
 # include <stdio.h>
@@ -60,6 +61,7 @@ struct						s_ping
 	char					*dest_name;
 	char					*canonname;
 	char					*ipstr;
+	char					*h_name;
 	int						ipv;
 	int						socket_fd;
 	int						transmitted;
@@ -71,6 +73,7 @@ struct						s_ping
 	float					rtt_sum;
 	float					rtt_max;
 	float					rtt_min;
+	int 					errors;
 	struct timeval			start;
 	struct s_opts			opts;
 };

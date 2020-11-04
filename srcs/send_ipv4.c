@@ -12,12 +12,30 @@
 
 #include "ft_ping.h"
 
-static void	fill_pkt(struct icmphdr *icmp)
+static void fill_iphdr(struct iphdr *ip)
+{
+	ip->version = 4;
+	ip->ihl = IP_HDR_SIZE / 4;
+	ip->tos = IP_TOS;
+	ip->tot_len = g_ping.datalen + ICMP_HDR_SIZE;
+	ip->id = 0;
+	ip->frag_off = 0;
+	ip->ttl = g_ping.ttl;
+	ip->protocol = IPPROTO_ICMP;
+	ip->check = 0;
+	ip->saddr = INADDR_ANY;
+	ip->daddr = g_ping.dest.sin_addr.s_addr;
+}
+
+static void	fill_pkt(void *pkt)
 {
 	unsigned char	*p;
 	struct timeval	*tv;
-	int				i;
+	struct iphdr 	*ip = pkt;
+	struct icmphdr 	*icmp;
 
+	fill_iphdr(ip);
+	icmp = (struct icmphdr*)(ip + 1);
 	icmp->type = ICMP_ECHO;
 	icmp->code = 0;
 	icmp->un.echo.id = g_ping.id;
@@ -25,13 +43,12 @@ static void	fill_pkt(struct icmphdr *icmp)
 	icmp->un.echo.sequence = ++g_ping.transmitted;
 	if (g_ping.datalen >= TIMEVAL_SIZE)
 	{
-		g_ping.timing = 1;
 		tv = (struct timeval*)(icmp + 1);
+		g_ping.timing = 1;
 		gettimeofday(tv, NULL);
 	}
-	p = (unsigned char*)(tv + 1);
-	i = 0;
-	while (i < g_ping.datalen)
+	p = (unsigned char*)icmp + ICMP_HDR_SIZE + sizeof(struct timeval);
+	for (int i = 0; i < g_ping.datalen; i++)
 		*p++ = i++;
 	icmp->checksum = in_cksum((void*)icmp, g_ping.datalen +
 								sizeof(struct icmphdr));
@@ -40,7 +57,7 @@ static void	fill_pkt(struct icmphdr *icmp)
 int			send_ipv4(void)
 {
 	void			*pkt;
-	int				pkt_size = g_ping.datalen + ICMP_HDR_SIZE;
+	int				pkt_size = g_ping.datalen + ICMP_HDR_SIZE + IP_HDR_SIZE;
 	int				ret;
 	
 	if ((pkt = malloc(pkt_size)) == NULL)
@@ -52,5 +69,5 @@ int			send_ipv4(void)
 	if (ret < 0)
 		perror("sendto");
 	free(pkt);
-	return (ret);
+	return ret;
 }

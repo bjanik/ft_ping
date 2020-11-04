@@ -16,28 +16,35 @@
 int ft_ping_usage(void)
 {
 	dprintf(STDERR_FILENO, "Usage: ft_ping [-Ddqv] [-c count] [-s packetsize] destination\n");
-	return (1);
+	return 1;
 }
 
 static int	init_socket(int *opt)
 {
+	int on = 1;
+
 	if (g_ping.ipv == IPV4)
 		g_ping.socket_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 
 	if (g_ping.socket_fd < 0)
 	{
 		perror("socket");
-		return (1);
+		return 1;
+	}
+	if (setsockopt(g_ping.socket_fd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)))
+	{
+		perror("setsockopt");
+		return 1;
 	}
 	if (g_ping.opts.opt & PING_SOCKET_DEBUG)
 	{
 		if (setsockopt(g_ping.socket_fd, SOL_SOCKET, SO_DEBUG, opt, sizeof(*opt)))
 		{
 			perror("setsockopt");
-			return (1);
+			return 1;
 		}
 	}
-	return (0);
+	return 0;
 }
 
 static void	init_ping(void)
@@ -48,6 +55,7 @@ static void	init_ping(void)
 	g_ping.ipstr = (char*)malloc(64);
 	if (g_ping.ipstr == NULL)
 		exit(1);
+	g_ping.h_name = NULL;
 	g_ping.ipv = IPV4;
 	ft_memset(&g_ping.opts, 0x0, sizeof(struct s_opts));
 	g_ping.timing = 0;
@@ -56,6 +64,7 @@ static void	init_ping(void)
 	g_ping.rtt_sum = 0;
 	g_ping.rtt_max = 0;
 	g_ping.rtt_min = INT_MAX;
+	g_ping.errors = 0;
 	gettimeofday(&g_ping.start, NULL);
 }
 
@@ -63,27 +72,30 @@ static int	init_ipv4(void)
 {
 	struct addrinfo		hints;
 	struct addrinfo		*res;
-	// struct hostent		*host;
+	struct hostent		*host;
+	int 				ret;
 
 	res = NULL;
 	ft_memset(&hints, 0x0, sizeof(struct addrinfo));
 	hints.ai_family = AF_INET;
 	hints.ai_flags = AI_CANONNAME;
-	if (getaddrinfo(g_ping.dest_name, NULL, &hints, &res))
+	if ((ret = getaddrinfo(g_ping.dest_name, NULL, &hints, &res)))
 	{
-		perror("ft_ping");
-		return (1);
+		dprintf(STDERR_FILENO, "ft_ping: %s\n", gai_strerror(ret));
+		return 1;
 	}
 	g_ping.dest.sin_family = AF_INET;
 	g_ping.dest.sin_addr.s_addr = ((struct sockaddr_in*)res->ai_addr)->sin_addr.s_addr;
-	// host = gethostbyname(g_ping.dest_name);
-	// printf("%s\n", host->h_name);
+	host = gethostbyaddr((char*)&g_ping.dest.sin_addr.s_addr, sizeof(int), AF_INET);
+	if (host != NULL)
+		g_ping.h_name = ft_strdup(host->h_name);
+		// return 1;
 	g_ping.canonname = ft_strdup(res->ai_canonname);
 	if (res->ai_canonname == NULL)
-		return (1);
+		return 1;
 	inet_ntop(g_ping.dest.sin_family, &g_ping.dest.sin_addr, g_ping.ipstr, 64);
 	freeaddrinfo(res);
-	return (0);
+	return 0;
 }
 
 int			main(int argc, char **argv)
@@ -96,9 +108,9 @@ int			main(int argc, char **argv)
 		return (ft_ping_usage());
 	init_ping();
 	if (parse_options(argc, argv))
-		return (1);
+		return 1;
 	if (init_ipv4())
-		return (1);
+		return 1;
 	init_socket(&opt);
 	signal(SIGALRM, sig_alarm);
 	signal(SIGINT, sig_final);
@@ -107,5 +119,5 @@ int			main(int argc, char **argv)
 			g_ping.datalen + sizeof(struct iphdr) + sizeof(struct icmphdr));
 	sig_alarm(0);
 	recv_pong();
-	return (ret);
+	return ret;
 }
